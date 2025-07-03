@@ -2,7 +2,7 @@ version: "3.8"
 
 services:
   postgres_db:
-    image: postgres:13-alpine
+    image: postgres:15-alpine
     environment:
       - POSTGRES_USER=${MASTER_DB_USER}
       - POSTGRES_PASSWORD=${MASTER_DB_PASSWORD}
@@ -10,8 +10,14 @@ services:
     ports:
       - "5432:5432"
     volumes:
-      - dev_postgres_data_update:/var/lib/postgresql/data/
+      - dev_shield_db:/var/lib/postgresql/data/
     restart: always
+    healthcheck:
+      test:
+        ["CMD-SHELL", "pg_isready -U ${MASTER_DB_USER} -d ${MASTER_DB_NAME}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
 
   pgadmin:
     container_name: pgadmin4_container
@@ -25,21 +31,22 @@ services:
     volumes:
       - pgadmin_data:/var/lib/pgadmin
 
-  # server:
-  #   container_name: dev_go_server
-  #   build:
-  #     context: .
-  #     target: dev
-  #   ports:
-  #     - ${SERVER_PORT}:${SERVER_PORT}
-  #     - ${DEBUGGER_PORT}:${DEBUGGER_PORT}
-  #   depends_on:
-  #     - postgres_db
-  #   volumes:
-  #     - .:/app:rw,delegated
-  #     - ~/.aws/:/root/.aws:ro
-  #   restart: always
+  server:
+    container_name: dev_go_server
+    build:
+      context: .
+      target: dev
+    ports:
+      - ${SERVER_PORT}:${SERVER_PORT}
+      - ${DEBUGGER_PORT}:${DEBUGGER_PORT}
+    depends_on:
+      postgres_db:
+        condition: service_healthy
+    volumes:
+      - .:/app:rw,delegated
+      - ~/.aws/:/root/.aws:ro
+    restart: always
 
 volumes:
-  dev_postgres_data_update:
+  dev_shield_db:
   pgadmin_data:

@@ -1,0 +1,50 @@
+# Ignore development files
+.env*
+!.env.example
+.air.toml
+tmp/
+.git/
+.gitignore
+
+# Ignore build artifacts
+bin/
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+*.test
+*.out
+
+# Ignore IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Ignore OS files
+.DS_Store
+Thumbs.db
+
+# Ignore log files
+*.log
+logs/
+
+# Ignore test coverage
+*.cover
+coverage.html
+coverage.out
+
+# Ignore documentation build
+docs/build/
+
+# Ignore node modules (if any frontend assets)
+node_modules/
+
+# Ignore vendor directory
+vendor/
+
+# Ignore temporary files
+*.tmp
+*.temp

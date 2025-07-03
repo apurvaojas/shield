@@ -9,15 +9,24 @@ const docTemplate = `{
     "info": {
         "description": "{{escape .Description}}",
         "title": "{{.Title}}",
-        "contact": {},
+        "termsOfService": "http://swagger.io/terms/",
+        "contact": {
+            "name": "API Support",
+            "url": "http://www.swagger.io/support",
+            "email": "support@swagger.io"
+        },
+        "license": {
+            "name": "Apache 2.0",
+            "url": "http://www.apache.org/licenses/LICENSE-2.0.html"
+        },
         "version": "{{.Version}}"
     },
     "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
     "paths": {
-        "/api/v1/onboarding/resendConfirmationCode": {
+        "/auth/confirm": {
             "post": {
-                "description": "Resend confirmation code",
+                "description": "Confirms user signup with verification code sent to email.",
                 "consumes": [
                     "application/json"
                 ],
@@ -25,33 +34,45 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "Accounts"
+                    "Authentication"
                 ],
-                "summary": "Resend confirmation code",
+                "summary": "Confirm user signup",
                 "parameters": [
                     {
-                        "description": "resend confirmation code",
-                        "name": "account",
+                        "description": "Confirm Signup Request",
+                        "name": "confirmSignupRequest",
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/requestModels.ResendVerificationCode"
+                            "$ref": "#/definitions/dto.ConfirmSignupRequest"
                         }
                     }
                 ],
                 "responses": {
                     "200": {
-                        "description": "success",
+                        "description": "User confirmed successfully",
                         "schema": {
-                            "type": "string"
+                            "$ref": "#/definitions/dto.SuccessResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request payload",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorResponse"
                         }
                     }
                 }
             }
         },
-        "/api/v1/onboarding/signup": {
+        "/auth/login": {
             "post": {
-                "description": "Supports Both Individual and Organization Account",
+                "description": "Authenticates a user with email and password.",
                 "consumes": [
                     "application/json"
                 ],
@@ -59,33 +80,85 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "Accounts"
+                    "Authentication"
                 ],
-                "summary": "Sign up for a new account",
+                "summary": "Authenticate user",
                 "parameters": [
                     {
-                        "description": "Add account",
-                        "name": "account",
+                        "description": "Login Request",
+                        "name": "loginRequest",
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/requestModels.SignUp"
+                            "$ref": "#/definitions/dto.LoginRequest"
                         }
                     }
                 ],
                 "responses": {
                     "200": {
-                        "description": "success",
+                        "description": "User authenticated successfully",
                         "schema": {
-                            "type": "string"
+                            "$ref": "#/definitions/dto.LoginResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request payload",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Invalid credentials",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorResponse"
                         }
                     }
                 }
             }
         },
-        "/api/v1/onboarding/verifyEmail": {
+        "/auth/logout": {
             "post": {
-                "description": "Verify email",
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Logs out a user and invalidates their session.",
+                "tags": [
+                    "Authentication"
+                ],
+                "summary": "Logout user",
+                "responses": {
+                    "200": {
+                        "description": "User logged out successfully",
+                        "schema": {
+                            "$ref": "#/definitions/dto.SuccessResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/auth/mfa/setup": {
+            "post": {
+                "description": "Initiates the MFA setup process (e.g., TOTP QR code, SMS setup).",
                 "consumes": [
                     "application/json"
                 ],
@@ -93,25 +166,325 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "Accounts"
+                    "Authentication"
                 ],
-                "summary": "Verify email",
+                "summary": "Setup MFA for a user",
                 "parameters": [
                     {
-                        "description": "verify email",
-                        "name": "account",
+                        "description": "MFA Setup Request",
+                        "name": "mfaSetupRequest",
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/requestModels.VerifyEmail"
+                            "$ref": "#/definitions/dto.MFASetupRequest"
                         }
                     }
                 ],
                 "responses": {
                     "200": {
-                        "description": "success",
+                        "description": "MFA setup initiated",
                         "schema": {
-                            "type": "string"
+                            "$ref": "#/definitions/dto.MFASetupResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request payload",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/auth/mfa/verify": {
+            "post": {
+                "description": "Verifies an MFA code (e.g., TOTP, SMS code) and completes login.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Authentication"
+                ],
+                "summary": "Verify MFA code",
+                "parameters": [
+                    {
+                        "description": "MFA Verify Request",
+                        "name": "mfaVerifyRequest",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/dto.MFAVerifyRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "MFA verified, login complete",
+                        "schema": {
+                            "$ref": "#/definitions/dto.SuccessResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request payload or MFA code",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/auth/org/signup": {
+            "post": {
+                "description": "Creates a new organization with an admin user account.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Organization"
+                ],
+                "summary": "Register a new organization",
+                "parameters": [
+                    {
+                        "description": "Organization Signup Request",
+                        "name": "orgSignupRequest",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/dto.OrgSignupRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Organization registered successfully",
+                        "schema": {
+                            "$ref": "#/definitions/dto.OrgSignupResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request payload",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/auth/org/{orgId}": {
+            "get": {
+                "description": "Retrieves details of an organization.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Organization"
+                ],
+                "summary": "Get organization details",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Organization ID",
+                        "name": "orgId",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Organization details",
+                        "schema": {
+                            "$ref": "#/definitions/dto.OrgDetails"
+                        }
+                    },
+                    "404": {
+                        "description": "Organization not found",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorResponse"
+                        }
+                    }
+                }
+            },
+            "put": {
+                "description": "Updates organization settings such as SSO configuration.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Organization"
+                ],
+                "summary": "Update organization",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Organization ID",
+                        "name": "orgId",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Update Organization Request",
+                        "name": "updateOrgRequest",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/dto.UpdateOrgRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Organization updated successfully",
+                        "schema": {
+                            "$ref": "#/definitions/dto.SuccessResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request payload",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Organization not found",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/auth/refresh": {
+            "post": {
+                "description": "Refreshes an access token using a refresh token.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Authentication"
+                ],
+                "summary": "Refresh access token",
+                "parameters": [
+                    {
+                        "description": "Refresh Token Request",
+                        "name": "refreshTokenRequest",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/dto.RefreshTokenRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Token refreshed successfully",
+                        "schema": {
+                            "$ref": "#/definitions/dto.RefreshTokenResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request payload",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Invalid refresh token",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/auth/signup": {
+            "post": {
+                "description": "Creates a new user account with email and password.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Authentication"
+                ],
+                "summary": "Register a new individual user",
+                "parameters": [
+                    {
+                        "description": "Signup Request",
+                        "name": "signupRequest",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/dto.SignupRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "User registered successfully, verification pending",
+                        "schema": {
+                            "$ref": "#/definitions/dto.SignupResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request payload",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorResponse"
                         }
                     }
                 }
@@ -119,121 +492,254 @@ const docTemplate = `{
         }
     },
     "definitions": {
-        "models.SSOType": {
-            "type": "string",
-            "enum": [
-                "SAML",
-                "OIDC"
-            ],
-            "x-enum-varnames": [
-                "SAML",
-                "OIDC"
-            ]
-        },
-        "models.UserType": {
-            "type": "string",
-            "enum": [
-                "INDIVIDUAL",
-                "ORGANIZATION"
-            ],
-            "x-enum-varnames": [
-                "Individual",
-                "Org"
-            ]
-        },
-        "requestModels.OrganizationInfo": {
+        "dto.CodeDeliveryDetails": {
             "type": "object",
-            "required": [
-                "emailDomain",
-                "hasSSO",
-                "name"
-            ],
             "properties": {
-                "emailDomain": {
+                "attribute_name": {
                     "type": "string"
                 },
-                "hasSSO": {
-                    "type": "boolean"
-                },
-                "name": {
+                "delivery_medium": {
+                    "description": "EMAIL or SMS",
                     "type": "string"
                 },
-                "ssoOptions": {
-                    "$ref": "#/definitions/requestModels.SSOOptions"
-                }
-            }
-        },
-        "requestModels.ResendVerificationCode": {
-            "type": "object",
-            "required": [
-                "email"
-            ],
-            "properties": {
-                "email": {
+                "destination": {
                     "type": "string"
                 }
             }
         },
-        "requestModels.SSOOptions": {
-            "type": "object",
-            "required": [
-                "clientId",
-                "clientSecret",
-                "redirectURL",
-                "ssoType"
-            ],
-            "properties": {
-                "clientId": {
-                    "type": "string"
-                },
-                "clientSecret": {
-                    "type": "string"
-                },
-                "redirectURL": {
-                    "type": "string"
-                },
-                "ssoType": {
-                    "$ref": "#/definitions/models.SSOType"
-                }
-            }
-        },
-        "requestModels.SignUp": {
+        "dto.ConfirmSignupRequest": {
             "type": "object",
             "required": [
                 "email",
-                "name",
-                "password",
-                "userType"
+                "verification_code"
             ],
             "properties": {
                 "email": {
+                    "type": "string"
+                },
+                "verification_code": {
+                    "type": "string"
+                }
+            }
+        },
+        "dto.ErrorResponse": {
+            "type": "object",
+            "properties": {
+                "error": {
+                    "type": "string"
+                }
+            }
+        },
+        "dto.LoginRequest": {
+            "type": "object",
+            "required": [
+                "email",
+                "password"
+            ],
+            "properties": {
+                "email": {
+                    "type": "string"
+                },
+                "password": {
+                    "type": "string"
+                }
+            }
+        },
+        "dto.LoginResponse": {
+            "type": "object",
+            "properties": {
+                "access_token": {
+                    "type": "string"
+                },
+                "expires_in": {
+                    "type": "integer"
+                },
+                "refresh_token": {
+                    "type": "string"
+                },
+                "token_type": {
+                    "type": "string"
+                }
+            }
+        },
+        "dto.MFASetupRequest": {
+            "type": "object",
+            "required": [
+                "method",
+                "user_id"
+            ],
+            "properties": {
+                "method": {
+                    "description": "e.g., \"TOTP\", \"SMS\"",
+                    "type": "string"
+                },
+                "user_id": {
+                    "type": "string"
+                }
+            }
+        },
+        "dto.MFASetupResponse": {
+            "type": "object",
+            "properties": {
+                "qr_code_uri": {
+                    "description": "For TOTP",
+                    "type": "string"
+                },
+                "secret": {
+                    "description": "For TOTP",
+                    "type": "string"
+                }
+            }
+        },
+        "dto.MFAVerifyRequest": {
+            "type": "object",
+            "required": [
+                "code",
+                "user_id"
+            ],
+            "properties": {
+                "code": {
+                    "type": "string"
+                },
+                "user_id": {
+                    "type": "string"
+                }
+            }
+        },
+        "dto.OrgDetails": {
+            "type": "object",
+            "properties": {
+                "callback_url": {
+                    "type": "string"
+                },
+                "created_at": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "idp_type": {
                     "type": "string"
                 },
                 "name": {
                     "type": "string"
                 },
-                "organizationInfo": {
-                    "$ref": "#/definitions/requestModels.OrganizationInfo"
-                },
-                "password": {
+                "sso_provider": {
                     "type": "string"
-                },
-                "userType": {
-                    "$ref": "#/definitions/models.UserType"
                 }
             }
         },
-        "requestModels.VerifyEmail": {
+        "dto.OrgSignupRequest": {
             "type": "object",
             "required": [
-                "confirmationCode",
-                "email"
+                "admin_email",
+                "org_name"
             ],
             "properties": {
-                "confirmationCode": {
+                "admin_email": {
                     "type": "string"
                 },
+                "admin_password": {
+                    "type": "string"
+                },
+                "org_name": {
+                    "type": "string"
+                }
+            }
+        },
+        "dto.OrgSignupResponse": {
+            "type": "object",
+            "properties": {
+                "admin_user_id": {
+                    "type": "string"
+                },
+                "message": {
+                    "type": "string"
+                },
+                "org_id": {
+                    "type": "string"
+                }
+            }
+        },
+        "dto.RefreshTokenRequest": {
+            "type": "object",
+            "required": [
+                "refresh_token"
+            ],
+            "properties": {
+                "refresh_token": {
+                    "type": "string"
+                }
+            }
+        },
+        "dto.RefreshTokenResponse": {
+            "type": "object",
+            "properties": {
+                "access_token": {
+                    "type": "string"
+                },
+                "expires_in": {
+                    "type": "integer"
+                },
+                "token_type": {
+                    "type": "string"
+                }
+            }
+        },
+        "dto.SignupRequest": {
+            "type": "object",
+            "required": [
+                "email",
+                "password"
+            ],
+            "properties": {
                 "email": {
+                    "type": "string"
+                },
+                "password": {
+                    "type": "string",
+                    "minLength": 8
+                }
+            }
+        },
+        "dto.SignupResponse": {
+            "type": "object",
+            "properties": {
+                "code_delivery_details": {
+                    "$ref": "#/definitions/dto.CodeDeliveryDetails"
+                },
+                "message": {
+                    "type": "string"
+                },
+                "requires_confirmation": {
+                    "type": "boolean"
+                },
+                "user_id": {
+                    "type": "string"
+                }
+            }
+        },
+        "dto.SuccessResponse": {
+            "type": "object",
+            "properties": {
+                "message": {
+                    "type": "string"
+                }
+            }
+        },
+        "dto.UpdateOrgRequest": {
+            "type": "object",
+            "properties": {
+                "callback_url": {
+                    "type": "string"
+                },
+                "idp_type": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "sso_provider": {
                     "type": "string"
                 }
             }
@@ -243,12 +749,12 @@ const docTemplate = `{
 
 // SwaggerInfo holds exported Swagger Info so clients can modify it
 var SwaggerInfo = &swag.Spec{
-	Version:          "",
-	Host:             "",
-	BasePath:         "",
-	Schemes:          []string{},
-	Title:            "",
-	Description:      "",
+	Version:          "1.0",
+	Host:             "localhost:8081",
+	BasePath:         "/api/v1",
+	Schemes:          []string{"http"},
+	Title:            "Shield Platform API",
+	Description:      "This is the main API for the Shield Identity and Access Management Platform.",
 	InfoInstanceName: "swagger",
 	SwaggerTemplate:  docTemplate,
 	LeftDelim:        "{{",

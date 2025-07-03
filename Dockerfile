@@ -31,7 +31,7 @@ COPY . .
 # Download all dependencies
 RUN go mod download && go mod verify
 
-RUN go build -mod=readonly -v -o org-forms-config-manager .
+RUN go build -mod=readonly -v -o org-forms-config-manager ./cmd/app
 
 # Start a new stage from scratch
 FROM alpine:latest

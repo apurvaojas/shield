@@ -1,0 +1,111 @@
+version: "3.8"
+
+services:
+  # Override the main application service for development
+  shield-api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: development
+    ports:
+      - "8081:8081"
+      - "2345:2345" # Delve debugger port
+    environment:
+      - ENVIRONMENT=development
+      - SSL_CERT_FILE=/app/dev.localhost.crt
+      - SSL_KEY_FILE=/app/dev.localhost.key
+    env_file:
+      - .env.development
+    volumes:
+      - .:/app
+      - go-mod-cache:/go/pkg/mod
+      - ./dev-certs/dev.localhost.crt:/app/dev.localhost.crt:ro
+      - ./dev-certs/dev.localhost.key:/app/dev.localhost.key:ro
+    depends_on:
+      - postgres
+      - redis
+    networks:
+      - shield-network
+    restart: unless-stopped
+    # For debugging, comment out air and use Delve:
+    # command: ["air", "-c", ".air.toml"]
+    command:
+      [
+        "dlv",
+        "debug",
+        "--headless",
+        "--listen=:2345",
+        "--api-version=2",
+        "--accept-multiclient",
+        "--log",
+      ]
+
+  # Override postgres for development
+  postgres:
+    image: postgres:15-alpine
+    volumes:
+      - postgres_dev_data:/var/lib/postgresql/data
+      - ./scripts/init-dev.sql:/docker-entrypoint-initdb.d/init.sql
+    environment:
+      POSTGRES_DB: shield_auth
+      POSTGRES_USER: shield
+      POSTGRES_PASSWORD: shield123
+    networks:
+      - shield-network
+
+  redis:
+    image: redis:7
+    networks:
+      - shield-network
+
+  # Add pgAdmin for development
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@shield.dev
+      PGADMIN_DEFAULT_PASSWORD: admin123
+    ports:
+      - "5050:80"
+    depends_on:
+      - postgres
+    networks:
+      - shield-network
+    volumes:
+      - pgadmin_data:/var/lib/pgadmin
+
+  # Add Redis Commander for development
+  redis-commander:
+    image: rediscommander/redis-commander:latest
+    environment:
+      REDIS_HOSTS: local:redis:6379
+    ports:
+      - "8082:8081"
+    depends_on:
+      - redis
+    networks:
+      - shield-network
+
+  # OPA server for local development
+  opa:
+    image: openpolicyagent/opa:latest-envoy
+    ports:
+      - "8181:8181"
+    command:
+      - "run"
+      - "--server"
+      - "--log-level=debug"
+      - "--set=decision_logs.console=true"
+      - "/policies"
+    volumes:
+      - ./policies:/policies
+    networks:
+      - shield-network
+
+networks:
+  shield-network:
+    driver: bridge
+
+volumes:
+  postgres_dev_data:
+  pgadmin_data:
+  go-mod-cache:

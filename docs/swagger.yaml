@@ -1,153 +1,490 @@
+basePath: /api/v1
 definitions:
-  models.SSOType:
-    enum:
-    - SAML
-    - OIDC
-    type: string
-    x-enum-varnames:
-    - SAML
-    - OIDC
-  models.UserType:
-    enum:
-    - INDIVIDUAL
-    - ORGANIZATION
-    type: string
-    x-enum-varnames:
-    - Individual
-    - Org
-  requestModels.OrganizationInfo:
+  dto.CodeDeliveryDetails:
     properties:
-      emailDomain:
+      attribute_name:
         type: string
-      hasSSO:
-        type: boolean
-      name:
+      delivery_medium:
+        description: EMAIL or SMS
         type: string
-      ssoOptions:
-        $ref: '#/definitions/requestModels.SSOOptions'
-    required:
-    - emailDomain
-    - hasSSO
-    - name
+      destination:
+        type: string
     type: object
-  requestModels.ResendVerificationCode:
+  dto.ConfirmSignupRequest:
     properties:
       email:
+        type: string
+      verification_code:
         type: string
     required:
     - email
+    - verification_code
     type: object
-  requestModels.SSOOptions:
+  dto.ErrorResponse:
     properties:
-      clientId:
+      error:
         type: string
-      clientSecret:
-        type: string
-      redirectURL:
-        type: string
-      ssoType:
-        $ref: '#/definitions/models.SSOType'
-    required:
-    - clientId
-    - clientSecret
-    - redirectURL
-    - ssoType
     type: object
-  requestModels.SignUp:
+  dto.LoginRequest:
     properties:
       email:
         type: string
-      name:
-        type: string
-      organizationInfo:
-        $ref: '#/definitions/requestModels.OrganizationInfo'
       password:
         type: string
-      userType:
-        $ref: '#/definitions/models.UserType'
     required:
     - email
-    - name
     - password
-    - userType
     type: object
-  requestModels.VerifyEmail:
+  dto.LoginResponse:
     properties:
-      confirmationCode:
+      access_token:
         type: string
+      expires_in:
+        type: integer
+      refresh_token:
+        type: string
+      token_type:
+        type: string
+    type: object
+  dto.MFASetupRequest:
+    properties:
+      method:
+        description: e.g., "TOTP", "SMS"
+        type: string
+      user_id:
+        type: string
+    required:
+    - method
+    - user_id
+    type: object
+  dto.MFASetupResponse:
+    properties:
+      qr_code_uri:
+        description: For TOTP
+        type: string
+      secret:
+        description: For TOTP
+        type: string
+    type: object
+  dto.MFAVerifyRequest:
+    properties:
+      code:
+        type: string
+      user_id:
+        type: string
+    required:
+    - code
+    - user_id
+    type: object
+  dto.OrgDetails:
+    properties:
+      callback_url:
+        type: string
+      created_at:
+        type: string
+      id:
+        type: string
+      idp_type:
+        type: string
+      name:
+        type: string
+      sso_provider:
+        type: string
+    type: object
+  dto.OrgSignupRequest:
+    properties:
+      admin_email:
+        type: string
+      admin_password:
+        type: string
+      org_name:
+        type: string
+    required:
+    - admin_email
+    - org_name
+    type: object
+  dto.OrgSignupResponse:
+    properties:
+      admin_user_id:
+        type: string
+      message:
+        type: string
+      org_id:
+        type: string
+    type: object
+  dto.RefreshTokenRequest:
+    properties:
+      refresh_token:
+        type: string
+    required:
+    - refresh_token
+    type: object
+  dto.RefreshTokenResponse:
+    properties:
+      access_token:
+        type: string
+      expires_in:
+        type: integer
+      token_type:
+        type: string
+    type: object
+  dto.SignupRequest:
+    properties:
       email:
         type: string
+      password:
+        minLength: 8
+        type: string
     required:
-    - confirmationCode
     - email
+    - password
     type: object
+  dto.SignupResponse:
+    properties:
+      code_delivery_details:
+        $ref: '#/definitions/dto.CodeDeliveryDetails'
+      message:
+        type: string
+      requires_confirmation:
+        type: boolean
+      user_id:
+        type: string
+    type: object
+  dto.SuccessResponse:
+    properties:
+      message:
+        type: string
+    type: object
+  dto.UpdateOrgRequest:
+    properties:
+      callback_url:
+        type: string
+      idp_type:
+        type: string
+      name:
+        type: string
+      sso_provider:
+        type: string
+    type: object
+host: localhost:8081
 info:
-  contact: {}
+  contact:
+    email: support@swagger.io
+    name: API Support
+    url: http://www.swagger.io/support
+  description: This is the main API for the Shield Identity and Access Management
+    Platform.
+  license:
+    name: Apache 2.0
+    url: http://www.apache.org/licenses/LICENSE-2.0.html
+  termsOfService: http://swagger.io/terms/
+  title: Shield Platform API
+  version: "1.0"
 paths:
-  /api/v1/onboarding/resendConfirmationCode:
+  /auth/confirm:
     post:
       consumes:
       - application/json
-      description: Resend confirmation code
+      description: Confirms user signup with verification code sent to email.
       parameters:
-      - description: resend confirmation code
+      - description: Confirm Signup Request
         in: body
-        name: account
+        name: confirmSignupRequest
         required: true
         schema:
-          $ref: '#/definitions/requestModels.ResendVerificationCode'
+          $ref: '#/definitions/dto.ConfirmSignupRequest'
       produces:
       - application/json
       responses:
         "200":
-          description: success
+          description: User confirmed successfully
           schema:
-            type: string
-      summary: Resend confirmation code
+            $ref: '#/definitions/dto.SuccessResponse'
+        "400":
+          description: Invalid request payload
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+      summary: Confirm user signup
       tags:
-      - Accounts
-  /api/v1/onboarding/signup:
+      - Authentication
+  /auth/login:
     post:
       consumes:
       - application/json
-      description: Supports Both Individual and Organization Account
+      description: Authenticates a user with email and password.
       parameters:
-      - description: Add account
+      - description: Login Request
         in: body
-        name: account
+        name: loginRequest
         required: true
         schema:
-          $ref: '#/definitions/requestModels.SignUp'
+          $ref: '#/definitions/dto.LoginRequest'
       produces:
       - application/json
       responses:
         "200":
-          description: success
+          description: User authenticated successfully
           schema:
-            type: string
-      summary: Sign up for a new account
+            $ref: '#/definitions/dto.LoginResponse'
+        "400":
+          description: Invalid request payload
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "401":
+          description: Invalid credentials
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+      summary: Authenticate user
       tags:
-      - Accounts
-  /api/v1/onboarding/verifyEmail:
+      - Authentication
+  /auth/logout:
+    post:
+      description: Logs out a user and invalidates their session.
+      responses:
+        "200":
+          description: User logged out successfully
+          schema:
+            $ref: '#/definitions/dto.SuccessResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Logout user
+      tags:
+      - Authentication
+  /auth/mfa/setup:
     post:
       consumes:
       - application/json
-      description: Verify email
+      description: Initiates the MFA setup process (e.g., TOTP QR code, SMS setup).
       parameters:
-      - description: verify email
+      - description: MFA Setup Request
         in: body
-        name: account
+        name: mfaSetupRequest
         required: true
         schema:
-          $ref: '#/definitions/requestModels.VerifyEmail'
+          $ref: '#/definitions/dto.MFASetupRequest'
       produces:
       - application/json
       responses:
         "200":
-          description: success
+          description: MFA setup initiated
           schema:
-            type: string
-      summary: Verify email
+            $ref: '#/definitions/dto.MFASetupResponse'
+        "400":
+          description: Invalid request payload
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+      summary: Setup MFA for a user
       tags:
-      - Accounts
+      - Authentication
+  /auth/mfa/verify:
+    post:
+      consumes:
+      - application/json
+      description: Verifies an MFA code (e.g., TOTP, SMS code) and completes login.
+      parameters:
+      - description: MFA Verify Request
+        in: body
+        name: mfaVerifyRequest
+        required: true
+        schema:
+          $ref: '#/definitions/dto.MFAVerifyRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: MFA verified, login complete
+          schema:
+            $ref: '#/definitions/dto.SuccessResponse'
+        "400":
+          description: Invalid request payload or MFA code
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+      summary: Verify MFA code
+      tags:
+      - Authentication
+  /auth/org/{orgId}:
+    get:
+      description: Retrieves details of an organization.
+      parameters:
+      - description: Organization ID
+        in: path
+        name: orgId
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Organization details
+          schema:
+            $ref: '#/definitions/dto.OrgDetails'
+        "404":
+          description: Organization not found
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+      summary: Get organization details
+      tags:
+      - Organization
+    put:
+      consumes:
+      - application/json
+      description: Updates organization settings such as SSO configuration.
+      parameters:
+      - description: Organization ID
+        in: path
+        name: orgId
+        required: true
+        type: string
+      - description: Update Organization Request
+        in: body
+        name: updateOrgRequest
+        required: true
+        schema:
+          $ref: '#/definitions/dto.UpdateOrgRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Organization updated successfully
+          schema:
+            $ref: '#/definitions/dto.SuccessResponse'
+        "400":
+          description: Invalid request payload
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "404":
+          description: Organization not found
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+      summary: Update organization
+      tags:
+      - Organization
+  /auth/org/signup:
+    post:
+      consumes:
+      - application/json
+      description: Creates a new organization with an admin user account.
+      parameters:
+      - description: Organization Signup Request
+        in: body
+        name: orgSignupRequest
+        required: true
+        schema:
+          $ref: '#/definitions/dto.OrgSignupRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Organization registered successfully
+          schema:
+            $ref: '#/definitions/dto.OrgSignupResponse'
+        "400":
+          description: Invalid request payload
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+      summary: Register a new organization
+      tags:
+      - Organization
+  /auth/refresh:
+    post:
+      consumes:
+      - application/json
+      description: Refreshes an access token using a refresh token.
+      parameters:
+      - description: Refresh Token Request
+        in: body
+        name: refreshTokenRequest
+        required: true
+        schema:
+          $ref: '#/definitions/dto.RefreshTokenRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Token refreshed successfully
+          schema:
+            $ref: '#/definitions/dto.RefreshTokenResponse'
+        "400":
+          description: Invalid request payload
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "401":
+          description: Invalid refresh token
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+      summary: Refresh access token
+      tags:
+      - Authentication
+  /auth/signup:
+    post:
+      consumes:
+      - application/json
+      description: Creates a new user account with email and password.
+      parameters:
+      - description: Signup Request
+        in: body
+        name: signupRequest
+        required: true
+        schema:
+          $ref: '#/definitions/dto.SignupRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: User registered successfully, verification pending
+          schema:
+            $ref: '#/definitions/dto.SignupResponse'
+        "400":
+          description: Invalid request payload
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+      summary: Register a new individual user
+      tags:
+      - Authentication
+schemes:
+- http
 swagger: "2.0"

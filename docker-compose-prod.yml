@@ -3,7 +3,7 @@ version: "3.8"
 services:
   postgres_db:
     container_name: core_pg_db
-    image: postgres:13-alpine
+    image: postgres:15-alpine
     environment:
       - POSTGRES_USER=${MASTER_DB_USER}
       - POSTGRES_PASSWORD=${MASTER_DB_PASSWORD}

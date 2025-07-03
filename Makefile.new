@@ -1,0 +1,167 @@
+# Makefile for the Shield Platform
+
+# Go parameters
+GOCMD=go
+GOBUILD=$(GOCMD) build
+GORUN=$(GOCMD) run
+GOMODTIDY=$(GOCMD) mod tidy
+GOTEST=$(GOCMD) test
+GOGET=$(GOCMD) get
+BINARY_NAME=shield-api
+BINARY_DIR=./bin
+MAIN_PACKAGE_PATH=./main.go
+SWAG_CMD=swag
+
+# Docker parameters
+DOCKER_COMPOSE=docker-compose
+DOCKER_COMPOSE_DEV=$(DOCKER_COMPOSE) -f docker-compose.yml -f docker-compose.override.yml
+
+# Default environment
+ENV ?= development
+
+.PHONY: all build run clean test deps docs help setup-env
+
+# Default target: build the main application
+all: build
+
+# Build the main application
+build:
+	@echo "Building $(BINARY_NAME)..."
+	@mkdir -p $(BINARY_DIR)
+	$(GOBUILD) -o $(BINARY_DIR)/$(BINARY_NAME) $(MAIN_PACKAGE_PATH)
+	@echo "$(BINARY_NAME) built in $(BINARY_DIR)/"
+
+# Environment setup
+setup-env:
+	@echo "Setting up $(ENV) environment..."
+	@./scripts/env.sh $(ENV)
+
+# Development with hot reload
+dev: setup-env
+	@echo "Starting development server with hot reload..."
+	@air -c .air.toml
+
+# Run the application
+run: setup-env
+	@echo "Running $(BINARY_NAME)..."
+	@$(GORUN) $(MAIN_PACKAGE_PATH)
+
+# Run tests
+test:
+	@echo "Running tests..."
+	@$(GOTEST) -v ./...
+
+# Run tests with coverage
+test-coverage:
+	@echo "Running tests with coverage..."
+	@$(GOTEST) -v -coverprofile=coverage.out ./...
+	@$(GOCMD) tool cover -html=coverage.out -o coverage.html
+	@echo "Coverage report generated: coverage.html"
+
+# Install dependencies
+deps:
+	@echo "Installing dependencies..."
+	@$(GOMODTIDY)
+	@$(GOGET) -u ./...
+
+# Generate Swagger documentation
+docs:
+	@echo "Generating Swagger documentation..."
+	@$(SWAG_CMD) init -g main.go --output ./docs
+
+# Docker commands
+docker-build:
+	@echo "Building Docker image..."
+	@docker build -t shield-api:latest .
+
+docker-build-dev:
+	@echo "Building Docker image for development..."
+	@docker build --target development -t shield-api:dev .
+
+# Start all services (production)
+docker-up:
+	@echo "Starting all services..."
+	@$(DOCKER_COMPOSE) up -d
+
+# Start development services
+docker-dev:
+	@echo "Starting development services..."
+	@$(DOCKER_COMPOSE_DEV) up -d
+
+# Stop all services
+docker-down:
+	@echo "Stopping all services..."
+	@$(DOCKER_COMPOSE) down
+
+# View logs
+docker-logs:
+	@echo "Showing logs..."
+	@$(DOCKER_COMPOSE) logs -f shield-api
+
+# Database operations
+db-migrate:
+	@echo "Running database migrations..."
+	@$(GORUN) scripts/migrate.go
+
+db-seed:
+	@echo "Seeding database..."
+	@$(GORUN) scripts/seed.go
+
+# Clean build artifacts
+clean:
+	@echo "Cleaning build artifacts..."
+	@rm -rf $(BINARY_DIR)
+	@rm -f coverage.out coverage.html
+	@rm -rf tmp/
+
+# Install development tools
+install-tools:
+	@echo "Installing development tools..."
+	@$(GOGET) -u github.com/cosmtrek/air@latest
+	@$(GOGET) -u github.com/swaggo/swag/cmd/swag@latest
+	@$(GOGET) -u github.com/golangci/golangci-lint/cmd/golangci-lint@latest
+
+# Lint code
+lint:
+	@echo "Running linter..."
+	@golangci-lint run
+
+# Format code
+fmt:
+	@echo "Formatting code..."
+	@$(GOCMD) fmt ./...
+
+# Security scan
+security:
+	@echo "Running security scan..."
+	@gosec ./...
+
+# Help
+help:
+	@echo "Available commands:"
+	@echo "  build         - Build the application"
+	@echo "  run           - Run the application"
+	@echo "  dev           - Start development server with hot reload"
+	@echo "  test          - Run tests"
+	@echo "  test-coverage - Run tests with coverage report"
+	@echo "  deps          - Install/update dependencies"
+	@echo "  docs          - Generate Swagger documentation"
+	@echo "  setup-env     - Setup environment (ENV=development|staging|production|test)"
+	@echo ""
+	@echo "  Docker commands:"
+	@echo "  docker-build  - Build Docker image"
+	@echo "  docker-dev    - Start development services"
+	@echo "  docker-up     - Start all services"
+	@echo "  docker-down   - Stop all services"
+	@echo "  docker-logs   - View application logs"
+	@echo ""
+	@echo "  Database commands:"
+	@echo "  db-migrate    - Run database migrations"
+	@echo "  db-seed       - Seed database with test data"
+	@echo ""
+	@echo "  Development tools:"
+	@echo "  install-tools - Install development tools"
+	@echo "  lint          - Run code linter"
+	@echo "  fmt           - Format code"
+	@echo "  security      - Run security scan"
+	@echo "  clean         - Clean build artifacts"
