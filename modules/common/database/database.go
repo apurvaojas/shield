@@ -12,14 +12,38 @@ import (
 
 // NewConnectionFromViper creates a DB connection using viper config
 func NewConnection() (*gorm.DB, error) {
-	host := viper.GetString("DB_HOST")
-	port := viper.GetString("DB_PORT")
-	user := viper.GetString("DB_USER")
-	password := viper.GetString("DB_PASSWORD")
-	dbname := viper.GetString("DB_NAME")
-	sslmode := viper.GetString("DB_SSLMODE")
+	// Validate required configuration
+	host := viper.GetString("database.host")
+	if host == "" {
+		return nil, fmt.Errorf("database.host is required")
+	}
 
-	dsn := fmt.Sprintf("host=%s user=%s password=%s dbname=%s port=%s sslmode=%s",
+	port := viper.GetInt("database.port")
+	if port == 0 {
+		port = 5432 // Default PostgreSQL port
+	}
+
+	user := viper.GetString("database.user")
+	if user == "" {
+		return nil, fmt.Errorf("database.user is required")
+	}
+
+	password := viper.GetString("database.password")
+	// if password == "" {
+	// 	return nil, fmt.Errorf("database.password is required")
+	// }
+
+	dbname := viper.GetString("database.name")
+	if dbname == "" {
+		return nil, fmt.Errorf("database.name is required")
+	}
+
+	sslmode := viper.GetString("database.sslMode")
+	if sslmode == "" {
+		sslmode = "require" // Default to require SSL
+	}
+
+	dsn := fmt.Sprintf("host=%s user=%s password=%s dbname=%s port=%d sslmode=%s",
 		host, user, password, dbname, port, sslmode)
 
 	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{
@@ -34,9 +58,25 @@ func NewConnection() (*gorm.DB, error) {
 		return nil, fmt.Errorf("failed to get underlying sql.DB: %w", err)
 	}
 
-	sqlDB.SetMaxIdleConns(10)
-	sqlDB.SetMaxOpenConns(100)
-	sqlDB.SetConnMaxLifetime(time.Hour)
+	// Configure connection pool from YAML config
+	maxIdleConns := viper.GetInt("database.maxIdleConns")
+	if maxIdleConns == 0 {
+		maxIdleConns = 10 // Default
+	}
+
+	maxOpenConns := viper.GetInt("database.maxOpenConns")
+	if maxOpenConns == 0 {
+		maxOpenConns = 100 // Default
+	}
+
+	connMaxLifetime := viper.GetDuration("database.connMaxLifetime")
+	if connMaxLifetime == 0 {
+		connMaxLifetime = time.Hour // Default
+	}
+
+	sqlDB.SetMaxIdleConns(maxIdleConns)
+	sqlDB.SetMaxOpenConns(maxOpenConns)
+	sqlDB.SetConnMaxLifetime(connMaxLifetime)
 
 	return db, nil
 }

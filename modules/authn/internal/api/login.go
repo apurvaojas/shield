@@ -3,10 +3,11 @@ package api
 import (
 	"net/http"
 
+	"shield/modules/authn/internal/api/dto"
+	"shield/modules/authn/internal/auth"
+	"shield/modules/authn/internal/auth/session"
+
 	"github.com/gin-gonic/gin"
-	 "github.com/tentackles/shield/modules/authn/internal/api/dto"
-	"github.com/tentackles/shield/modules/authn/internal/auth"
-	"github.com/tentackles/shield/modules/authn/internal/auth/session"
 )
 
 // Login handles user authentication.

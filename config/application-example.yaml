@@ -1,0 +1,33 @@
+# Example configuration showing the new YAML structure
+# This replaces the old .env files
+
+server:
+  port: 8080
+  environment: example
+
+database:
+  host: localhost
+  port: 5432
+  user: postgres
+  password: password
+  name: myapp
+  sslMode: disable
+  maxIdleConns: 10
+  maxOpenConns: 100
+  connMaxLifetime: 1h
+
+redis:
+  host: localhost
+  port: 6379
+  password: ""
+  db: 0
+
+logger:
+  level: info
+  fileEnabled: false
+  fileDir: ./logs
+  maxFileSizeMB: 100
+  maxFiles: 5
+  maxAgeDays: 30
+  compress: true
+  enableMasking: true

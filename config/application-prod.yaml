@@ -1,0 +1,115 @@
+# Production Environment Configuration
+# Production settings - Use environment variables for sensitive data
+
+server:
+  port: 8081
+  environment: production
+  debug: false
+  timezone: UTC
+
+logger:
+  level: warn
+
+database:
+  host: ${PROD_DB_HOST}
+  port: 5432
+  user: ${PROD_DB_USER}
+  password: ${PROD_DB_PASSWORD}
+  name: shield_auth_prod
+  sslMode: require
+  maxIdleConns: 50
+  maxOpenConns: 500
+  connMaxLifetime: 4h
+
+redis:
+  host: ${PROD_REDIS_HOST}
+  port: 6379
+  password: ${PROD_REDIS_PASSWORD}
+  db: 0
+
+cognito:
+  userPoolId: ${PROD_COGNITO_USER_POOL_ID}
+  appClientId: ${PROD_COGNITO_APP_CLIENT_ID}
+  appClientSecret: ${PROD_COGNITO_APP_CLIENT_SECRET}
+  region: us-east-1
+  domain: ${PROD_COGNITO_DOMAIN}
+
+jwt:
+  secret: ${PROD_JWT_SECRET}
+  expiry: 8h
+  refreshExpiry: 24h
+
+opa:
+  serverUrl: ${PROD_OPA_SERVER_URL}
+  policyPath: /v1/data
+
+observability:
+  jaegerEndpoint: ${PROD_JAEGER_ENDPOINT}
+  prometheusEndpoint: ${PROD_PROMETHEUS_ENDPOINT}
+  enableMetrics: true
+  enableTracing: true
+  prometheus:
+    port: 9090
+  jaeger:
+    uiPort: 16686
+    collectorPort: 14268
+
+rateLimiting:
+  enabled: true
+  requestsPerMinute: 100
+  burst: 20
+
+security:
+  cors:
+    allowedOrigins: ${PROD_ALLOWED_ORIGINS}
+    allowedMethods:
+      - GET
+      - POST
+      - PUT
+      - DELETE
+      - OPTIONS
+    allowedHeaders:
+      - Content-Type
+      - Authorization
+      - X-Requested-With
+      - X-Device-Fingerprint
+  trustedProxies: ${PROD_TRUSTED_PROXIES}
+
+features:
+  multiFactorAuth: true
+  deviceTracking: true
+  sessionRotation: true
+
+instrumentation:
+  logging:
+    withRequestBody: false
+    withResponseBody: false
+    withRequestHeader: false
+    withResponseHeader: false
+    withUserAgent: true
+    withRequestId: true
+    withSpanId: true
+    withTraceId: true
+    skipPaths:
+      - /health
+      - /metrics
+      - /ping
+    defaultLevel: warn
+    clientErrorLevel: warn
+    serverErrorLevel: error
+  openTelemetry:
+    serviceName: shield-api-production
+    enableTracing: true
+    enableMetrics: true
+    withSpanId: true
+    withTraceId: true
+    withUserAgent: true
+    withRequestBody: false
+    withResponseBody: false
+    withRequestHeader: false
+    withResponseHeader: false
+    filterPaths:
+      - /health
+      - /metrics
+      - /ping
+    filterMethods: []

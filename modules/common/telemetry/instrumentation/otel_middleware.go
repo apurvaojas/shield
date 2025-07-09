@@ -6,6 +6,8 @@ package instrumentation
 import (
 	"strings"
 
+	appconfig "shield/cmd/app/config"
+
 	"github.com/gin-gonic/gin"
 	"go.opentelemetry.io/contrib/instrumentation/github.com/gin-gonic/gin/otelgin"
 	"go.opentelemetry.io/otel"
@@ -38,9 +40,9 @@ type OTELMiddlewareConfig struct {
 }
 
 // InitOTELMiddleware initializes and returns the OpenTelemetry middleware for Gin
-// using Viper configuration. If config is nil, default configuration is used.
+// using centralized configuration. If config is nil, default configuration is used.
 func InitOTELMiddleware(config *OTELMiddlewareConfig) gin.HandlerFunc {
-	viperConfig := GetOTELConfig()
+	viperConfig := appconfig.GetInstrumentationConfig().OpenTelemetry
 
 	if config == nil {
 		// Convert Viper config to middleware config

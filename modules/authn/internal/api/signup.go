@@ -3,9 +3,10 @@ package api
 import (
 	"net/http"
 
+	"shield/modules/authn/internal/api/dto"
+	"shield/modules/authn/internal/auth"
+
 	"github.com/gin-gonic/gin"
-	"github.com/tentackles/shield/modules/authn/internal/api/dto"
-	"github.com/tentackles/shield/modules/authn/internal/auth"
 )
 
 // Signup handles the user registration process.

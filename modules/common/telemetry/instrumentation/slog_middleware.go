@@ -9,14 +9,17 @@ package instrumentation
 
 import (
 	"log/slog"
+	"strings"
+
+	"shield/cmd/app/config"
 
 	"github.com/gin-gonic/gin"
 	sloggin "github.com/samber/slog-gin"
 )
 
-// InitLoggingMiddleware initializes the slog middleware for Gin using Viper configuration
+// InitLoggingMiddleware initializes the slog middleware for Gin using centralized configuration
 func InitLoggingMiddleware() gin.HandlerFunc {
-	config := GetLoggingConfig()
+	config := config.GetInstrumentationConfig().Logging
 
 	// Configure slog-gin middleware with Viper-loaded config
 	// Note: Sensitive data masking is now handled directly in the logger
@@ -29,9 +32,9 @@ func InitLoggingMiddleware() gin.HandlerFunc {
 		WithRequestID:      config.WithRequestID,
 		WithSpanID:         config.WithSpanID,
 		WithTraceID:        config.WithTraceID,
-		DefaultLevel:       config.DefaultSlogLevel(),
-		ClientErrorLevel:   config.ClientErrorSlogLevel(),
-		ServerErrorLevel:   config.ServerErrorSlogLevel(),
+		DefaultLevel:       parseLogLevel(config.DefaultLevel),
+		ClientErrorLevel:   parseLogLevel(config.ClientErrorLevel),
+		ServerErrorLevel:   parseLogLevel(config.ServerErrorLevel),
 		Filters: []sloggin.Filter{
 			// Skip specified paths
 			func(c *gin.Context) bool {
@@ -69,4 +72,20 @@ func AddCustomAttributesUnsafe(c *gin.Context, attrs ...slog.Attr) {
 // This should be used before the logging middleware to ensure request IDs are captured
 func InitRequestIDMiddleware() gin.HandlerFunc {
 	return gin.Recovery() // Using gin.Recovery() which already handles request ID generation
+}
+
+// parseLogLevel converts string log level to slog.Level
+func parseLogLevel(level string) slog.Level {
+	switch strings.ToLower(level) {
+	case "debug":
+		return slog.LevelDebug
+	case "info":
+		return slog.LevelInfo
+	case "warn", "warning":
+		return slog.LevelWarn
+	case "error":
+		return slog.LevelError
+	default:
+		return slog.LevelInfo
+	}
 }

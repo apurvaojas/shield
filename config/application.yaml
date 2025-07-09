@@ -1,0 +1,64 @@
+# Default Application Configuration
+# Based on .env.example
+
+server:
+  secret: h9wt*pasj6796j##w(w8=xaje8tpi6h*r&hzgrz065u&ed+k2)
+  debug: false
+  host: 0.0.0.0
+  port: 8001
+  timezone: UTC
+
+security:
+  trustedProxies:
+    - 0.0.0.0
+
+database:
+  master:
+    name: test_pg_go
+    user: mamun
+    password: "123"
+    host: postgres_db
+    port: 5432
+    logMode: true
+    sslMode: disable
+  replica:
+    name: test_pg_go
+    user: mamun
+    password: "123"
+    host: localhost
+    port: 5432
+    sslMode: disable
+
+instrumentation:
+  logging:
+    withRequestBody: false
+    withResponseBody: false
+    withRequestHeader: true
+    withResponseHeader: true
+    withUserAgent: true
+    withRequestId: true
+    withSpanId: true
+    withTraceId: true
+    skipPaths:
+      - /health
+      - /metrics
+      - /ping
+    defaultLevel: info
+    clientErrorLevel: warn
+    serverErrorLevel: error
+  openTelemetry:
+    serviceName: shield-api
+    enableTracing: false
+    enableMetrics: false
+    withSpanId: false
+    withTraceId: false
+    withUserAgent: false
+    withRequestBody: false
+    withResponseBody: false
+    withRequestHeader: false
+    withResponseHeader: false
+    filterPaths:
+      - /health
+      - /metrics
+      - /ping
+    filterMethods: []

@@ -1,4 +1,4 @@
-package routers
+package main
 
 import (
 	_ "shield/docs" // This line is needed for swagger

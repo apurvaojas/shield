@@ -5,8 +5,9 @@ import (
 	"fmt"
 	"time"
 
+	"shield/modules/authn/internal/models"
+
 	"github.com/google/uuid"
-	"github.com/tentackles/shield/modules/authn/internal/models"
 )
 
 // SessionManager handles session creation, validation, and cleanup

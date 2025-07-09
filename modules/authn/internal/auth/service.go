@@ -4,27 +4,28 @@ import (
 	"context"
 	"fmt" // For error wrapping
 
+	appconfig "shield/cmd/app/config" // Updated import path
+	"shield/modules/authn/internal/auth/nonce"
+	authprovider "shield/modules/authn/internal/auth/provider" // Updated import path
+	"shield/modules/authn/internal/auth/session"
+	"shield/modules/authn/internal/models"
+	"shield/modules/authn/internal/repository" // Add repository import
+
 	"github.com/aws/aws-sdk-go-v2/aws" // Added for aws.String
 	"github.com/aws/aws-sdk-go-v2/service/cognitoidentityprovider/types"
-	"github.com/tentackles/shield/modules/authn/internal/auth/nonce"
-	authprovider "github.com/tentackles/shield/modules/authn/internal/auth/provider" // Updated import path
-	"github.com/tentackles/shield/modules/authn/internal/auth/session"
-	appconfig "github.com/tentackles/shield/modules/authn/internal/config" // Updated import path
-	"github.com/tentackles/shield/modules/authn/internal/models"
-	"github.com/tentackles/shield/modules/authn/internal/repository" // Add repository import
 )
 
 // AuthService provides methods for authentication.
 type AuthService struct {
 	provider       authprovider.AuthProvider
-	config         appconfig.Config
+	config         *appconfig.Config
 	userRepository repository.UserRepository
 	sessionManager session.SessionManager
 	nonceValidator nonce.NonceValidator
 }
 
 // NewAuthService creates a new AuthService.
-func NewAuthService(provider authprovider.AuthProvider, cfg appconfig.Config, userRepo repository.UserRepository, sessionMgr session.SessionManager, nonceVal nonce.NonceValidator) *AuthService {
+func NewAuthService(provider authprovider.AuthProvider, cfg *appconfig.Config, userRepo repository.UserRepository, sessionMgr session.SessionManager, nonceVal nonce.NonceValidator) *AuthService {
 	return &AuthService{
 		provider:       provider,
 		config:         cfg,

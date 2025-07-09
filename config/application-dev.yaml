@@ -1,0 +1,122 @@
+# Development Environment Configuration
+
+server:
+  port: 8081
+  environment: development
+  debug: true
+  timezone: UTC
+
+logger:
+  level: debug
+  fileEnabled: false
+  fileDir: ./logs
+  maxFileSizeMB: 100
+  maxFiles: 5
+  maxAgeDays: 30
+  compress: true
+  enableMasking: true
+
+database:
+  host: localhost
+  port: 5432
+  user: shield_user
+  password: password
+  name: shield_dev
+  sslMode: disable
+  maxIdleConns: 10
+  maxOpenConns: 100
+  connMaxLifetime: 1h
+
+redis:
+  host: localhost
+  port: 6379
+  password: ""
+  db: 0
+
+cognito:
+  userPoolId: eu-north-1_PmsffMQ5i
+  appClientId: 4ab430t7f1cii0n442g02pnine
+  appClientSecret: c8f5hbetpghitiar4snl2ap58hfkv3b7i6icq9qar7pm35gu0r5
+  region: eu-north-1
+  domain: cognito-idp.eu-north-1.amazonaws.com
+
+jwt:
+  secret: dev-jwt-secret-not-for-production
+  expiry: 24h
+  refreshExpiry: 168h
+
+opa:
+  serverUrl: http://localhost:8181
+  policyPath: /v1/data
+
+observability:
+  jaegerEndpoint: http://localhost:14268/api/traces
+  prometheusEndpoint: http://localhost:9090
+  enableMetrics: true
+  enableTracing: true
+
+rateLimiting:
+  enabled: true
+  requestsPerMinute: 1000
+  burst: 100
+
+security:
+  cors:
+    allowedOrigins:
+      - http://localhost:3000
+      - http://localhost:3001
+      - http://localhost:8080
+    allowedMethods:
+      - GET
+      - POST
+      - PUT
+      - DELETE
+      - OPTIONS
+      - PATCH
+    allowedHeaders:
+      - Content-Type
+      - Authorization
+      - X-Requested-With
+      - X-Device-Fingerprint
+  trustedProxies:
+    - 127.0.0.1
+    - ::1
+
+features:
+  multiFactorAuth: false
+  deviceTracking: true
+  sessionRotation: false
+
+instrumentation:
+  logging:
+    withRequestBody: false
+    withResponseBody: false
+    withRequestHeader: true
+    withResponseHeader: true
+    withUserAgent: true
+    withRequestId: true
+    withSpanId: true
+    withTraceId: true
+    skipPaths:
+      - /health
+      - /metrics
+      - /ping
+    defaultLevel: debug
+    clientErrorLevel: warn
+    serverErrorLevel: error
+  openTelemetry:
+    serviceName: shield-api-development
+    enableTracing: true
+    enableMetrics: true
+    withSpanId: true
+    withTraceId: true
+    withUserAgent: true
+    withRequestBody: false
+    withResponseBody: false
+    withRequestHeader: false
+    withResponseHeader: false
+    filterPaths:
+      - /health
+      - /metrics
+      - /ping
+    filterMethods: []

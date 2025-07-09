@@ -1,9 +1,9 @@
 package api
 
 import (
-	"github.com/tentackles/shield/modules/authn/internal/auth"
-	// "github.com/tentackles/shield/modules/authn/internal/organization" // Placeholder for OrgService
-	// "github.com/tentackles/shield/pkg/errors" // Placeholder for ErrorHandler
+	"shield/modules/authn/internal/auth"
+	// "shield/modules/authn/internal/organization" // Placeholder for OrgService
+	// "shield/pkg/errors" // Placeholder for ErrorHandler
 )
 
 // AuthHandler holds dependencies for authentication and authorization handlers.

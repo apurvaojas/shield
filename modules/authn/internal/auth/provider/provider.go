@@ -3,8 +3,9 @@ package provider
 import (
 	"context"
 
+	"shield/modules/authn/internal/models"
+
 	cognitoTypes "github.com/aws/aws-sdk-go-v2/service/cognitoidentityprovider/types"
-	"github.com/tentackles/shield/modules/authn/internal/models"
 )
 
 // --- Request & Response Structs for AuthProvider interface ---

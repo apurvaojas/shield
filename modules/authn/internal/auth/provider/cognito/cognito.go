@@ -13,9 +13,9 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/cognitoidentityprovider"
 	"github.com/aws/aws-sdk-go-v2/service/cognitoidentityprovider/types"
 
-	authprovider "github.com/tentackles/shield/modules/authn/internal/auth/provider" // Updated import path
-	appConfig "github.com/tentackles/shield/modules/authn/internal/config"
-	"github.com/tentackles/shield/modules/authn/internal/models" // Assuming user models are here
+	appConfig "shield/cmd/app/config"
+	authprovider "shield/modules/authn/internal/auth/provider" // Updated import path
+	"shield/modules/authn/internal/models"                     // Assuming user models are here
 )
 
 // Provider implements authentication logic using AWS Cognito.
