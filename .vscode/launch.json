@@ -10,6 +10,22 @@
       "port": 2345,
       "host": "127.0.0.1",
       "cwd": "${workspaceFolder}"
+    },
+    {
+      "name": "Launch Shield (cmd/app)",
+      "type": "go",
+      "request": "launch",
+      "mode": "debug",
+      "program": "${workspaceFolder}/cmd/app",
+      "cwd": "${workspaceFolder}",
+      "env": {
+        "ENVIRONMENT": "dev",
+        "LOG_LEVEL": "debug"
+      },
+      "args": [],
+      "buildFlags": "",
+      "dlvToolPath": "${env:HOME}/go/bin/dlv",
+      "showLog": true
     }
   ]
 }
