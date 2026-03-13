@@ -15,12 +15,14 @@ type Config struct {
 	Server          ServerConfig
 	Database        DatabaseConfig
 	Redis           RedisConfig
+	Valkey          ValkeyConfig
 	Cognito         CognitoConfig
 	JWT             JWTConfig
 	OPA             OPAConfig
 	Observability   ObservabilityConfig
 	RateLimiting    RateLimitingConfig
 	Security        SecurityConfig
+	Internal        InternalConfig
 	Features        FeaturesConfig
 	Logger          LoggerConfig
 	Instrumentation InstrumentationConfig
@@ -45,6 +47,9 @@ type DatabaseConfig struct {
 	MaxIdleConns    int           `mapstructure:"maxIdleConns"`
 	MaxOpenConns    int           `mapstructure:"maxOpenConns"`
 	ConnMaxLifetime time.Duration `mapstructure:"connMaxLifetime"`
+	// SecretARN holds the ARN of a Secrets Manager secret that contains
+	// the database credentials (preferred for production deployments).
+	SecretARN string `mapstructure:"secretArn"`
 }
 
 // RedisConfig holds Redis connection details.
@@ -53,6 +58,12 @@ type RedisConfig struct {
 	Port     int    `mapstructure:"port"`
 	Password string `mapstructure:"password"`
 	DB       int    `mapstructure:"db"`
+}
+
+// ValkeyConfig holds Valkey connection details.
+type ValkeyConfig struct {
+	URL   string `mapstructure:"url"`
+	Token string `mapstructure:"token"`
 }
 
 // CognitoConfig holds AWS Cognito specific configuration.
@@ -96,6 +107,11 @@ type RateLimitingConfig struct {
 type SecurityConfig struct {
 	CORS           CORSConfig `mapstructure:"cors"`
 	TrustedProxies []string   `mapstructure:"trustedProxies"`
+}
+
+// InternalConfig holds settings for internal service-to-service communication
+type InternalConfig struct {
+	ServiceKey string `mapstructure:"serviceKey"`
 }
 
 // CORSConfig holds CORS configuration.
@@ -194,6 +210,25 @@ func LoadConfig() error {
 		return fmt.Errorf("unable to decode config into struct: %w", err)
 	}
 
+	// Allow explicit env override for AUTH_INTERNAL_KEY (set by CDK/infra)
+	if ak := os.Getenv("AUTH_INTERNAL_KEY"); ak != "" {
+		config.Internal.ServiceKey = ak
+	}
+
+	// Allow infra to inject the Valkey endpoint and secret ARN directly via env vars
+	if vk := os.Getenv("VALKEY_URL"); vk != "" {
+		config.Valkey.URL = vk
+	}
+	if vkSec := os.Getenv("VALKEY_SECRET_ARN"); vkSec != "" {
+		// Store secret ARN in the token field so callers can locate the secret.
+		config.Valkey.Token = vkSec
+	}
+
+	// Allow inject of DB secret ARN (the Lambda env provides this in deployment)
+	if dbSec := os.Getenv("DB_SECRET_ARN"); dbSec != "" {
+		config.Database.SecretARN = dbSec
+	}
+
 	// Set the global config
 	AppConfig = config
 
@@ -224,6 +259,11 @@ func GetRedisConfig() RedisConfig {
 	return GetConfig().Redis
 }
 
+// GetValkeyConfig returns the Valkey configuration.
+func GetValkeyConfig() ValkeyConfig {
+	return GetConfig().Valkey
+}
+
 // GetCognitoConfig returns the Cognito configuration.
 func GetCognitoConfig() CognitoConfig {
 	return GetConfig().Cognito
@@ -252,6 +292,11 @@ func GetLoggerConfig() LoggerConfig {
 // GetInstrumentationConfig returns the instrumentation configuration.
 func GetInstrumentationConfig() InstrumentationConfig {
 	return GetConfig().Instrumentation
+}
+
+// GetInternalConfig returns internal configuration
+func GetInternalConfig() InternalConfig {
+	return GetConfig().Internal
 }
 
 // Environment helpers

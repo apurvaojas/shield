@@ -1,16 +1,11 @@
 {
-    "schemes": [
-        "http"
-    ],
     "swagger": "2.0",
     "info": {
-        "description": "This is the main API for the Shield Identity and Access Management Platform.",
-        "title": "Shield Platform API",
-        "termsOfService": "http://swagger.io/terms/",
+        "description": "API documentation for Organic Forms Configuration Management\nThis API provides endpoints for:\n- User Authentication & Authorization\n- Organization Management\n- SSO Configuration\n- Form Configuration Management",
         "contact": {
             "name": "API Support",
-            "url": "http://www.swagger.io/support",
-            "email": "support@swagger.io"
+            "url": "https://github.com/yourusername/shield/issues",
+            "email": "support@example.com"
         },
         "license": {
             "name": "Apache 2.0",
@@ -131,6 +126,15 @@
                     "Authentication"
                 ],
                 "summary": "Logout user",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "CSRF token",
+                        "name": "X-CSRF-Token",
+                        "in": "header",
+                        "required": true
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "User logged out successfully",
@@ -411,6 +415,13 @@
                         "schema": {
                             "$ref": "#/definitions/dto.RefreshTokenRequest"
                         }
+                    },
+                    {
+                        "type": "string",
+                        "description": "CSRF token",
+                        "name": "X-CSRF-Token",
+                        "in": "header",
+                        "required": true
                     }
                 ],
                 "responses": {
@@ -486,6 +497,91 @@
                     }
                 }
             }
+        },
+        "/internal/exchange": {
+            "post": {
+                "description": "Internal endpoint used by API Gateway to obtain a valid access token for a session",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Internal"
+                ],
+                "summary": "Exchange session id for access token",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ExchangeTokenResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/internal/users/{cognitoSub}/claims": {
+            "get": {
+                "tags": [
+                    "Internal",
+                    "Authentication"
+                ],
+                "summary": "Get user claims",
+                "description": "Returns claims for a user identified by their Cognito sub.",
+                "produces": [
+                    "application/json"
+                ],
+                "parameters": [
+                    {
+                        "name": "cognitoSub",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "description": "Cognito sub"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "sub": {
+                                    "type": "string"
+                                },
+                                "claims": {
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request"
+                    },
+                    "404": {
+                        "description": "Not Found"
+                    }
+                }
+            }
         }
     },
     "definitions": {
@@ -523,6 +619,23 @@
             "type": "object",
             "properties": {
                 "error": {
+                    "type": "string"
+                }
+            }
+        },
+        "dto.ExchangeTokenResponse": {
+            "type": "object",
+            "properties": {
+                "access_token": {
+                    "type": "string"
+                },
+                "expires_at": {
+                    "type": "string"
+                },
+                "expires_in": {
+                    "type": "integer"
+                },
+                "token_type": {
                     "type": "string"
                 }
             }
@@ -687,10 +800,14 @@
             "type": "object",
             "required": [
                 "email",
+                "name",
                 "password"
             ],
             "properties": {
                 "email": {
+                    "type": "string"
+                },
+                "name": {
                     "type": "string"
                 },
                 "password": {
@@ -740,6 +857,14 @@
                     "type": "string"
                 }
             }
+        }
+    },
+    "securityDefinitions": {
+        "BearerAuth": {
+            "description": "Type \"Bearer\" followed by a space and the JWT token.",
+            "type": "apiKey",
+            "name": "Authorization",
+            "in": "header"
         }
     }
 }

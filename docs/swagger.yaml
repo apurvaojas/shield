@@ -25,6 +25,17 @@ definitions:
       error:
         type: string
     type: object
+  dto.ExchangeTokenResponse:
+    properties:
+      access_token:
+        type: string
+      expires_at:
+        type: string
+      expires_in:
+        type: integer
+      token_type:
+        type: string
+    type: object
   dto.LoginRequest:
     properties:
       email:
@@ -132,11 +143,14 @@ definitions:
     properties:
       email:
         type: string
+      name:
+        type: string
       password:
         minLength: 8
         type: string
     required:
     - email
+    - name
     - password
     type: object
   dto.SignupResponse:
@@ -169,16 +183,19 @@ definitions:
 host: localhost:8081
 info:
   contact:
-    email: support@swagger.io
+    email: support@example.com
     name: API Support
-    url: http://www.swagger.io/support
-  description: This is the main API for the Shield Identity and Access Management
-    Platform.
+    url: https://github.com/yourusername/shield/issues
+  description: |-
+    API documentation for Organic Forms Configuration Management
+    This API provides endpoints for:
+    - User Authentication & Authorization
+    - Organization Management
+    - SSO Configuration
+    - Form Configuration Management
   license:
     name: Apache 2.0
     url: http://www.apache.org/licenses/LICENSE-2.0.html
-  termsOfService: http://swagger.io/terms/
-  title: Shield Platform API
   version: "1.0"
 paths:
   /auth/confirm:
@@ -248,6 +265,12 @@ paths:
   /auth/logout:
     post:
       description: Logs out a user and invalidates their session.
+      parameters:
+      - description: CSRF token
+        in: header
+        name: X-CSRF-Token
+        required: true
+        type: string
       responses:
         "200":
           description: User logged out successfully
@@ -433,6 +456,11 @@ paths:
         required: true
         schema:
           $ref: '#/definitions/dto.RefreshTokenRequest'
+      - description: CSRF token
+        in: header
+        name: X-CSRF-Token
+        required: true
+        type: string
       produces:
       - application/json
       responses:
@@ -485,6 +513,38 @@ paths:
       summary: Register a new individual user
       tags:
       - Authentication
-schemes:
-- http
+  /internal/exchange:
+    post:
+      consumes:
+      - application/json
+      description: Internal endpoint used by API Gateway to obtain a valid access
+        token for a session
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.ExchangeTokenResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+      summary: Exchange session id for access token
+      tags:
+      - Internal
+securityDefinitions:
+  BearerAuth:
+    description: Type "Bearer" followed by a space and the JWT token.
+    in: header
+    name: Authorization
+    type: apiKey
 swagger: "2.0"

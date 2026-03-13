@@ -2,15 +2,20 @@ package main
 
 import (
 	log "log/slog"
+	"os"
 	"shield/cmd/app/config"
 	"shield/cmd/app/router"
 	"shield/modules/common/database"
+	"shield/modules/common/swagger"
 	common "shield/modules/common/telemetry/logger"
 	"time"
 
-	_ "shield/docs" // This line is needed for swagger
-
 	"gorm.io/gorm"
+
+	authn "shield/modules/authn"
+
+	"github.com/aws/aws-lambda-go/lambda"
+	ginadapter "github.com/awslabs/aws-lambda-go-api-proxy/gin"
 )
 
 // @version         1.0
@@ -28,7 +33,7 @@ import (
 // @license.name  Apache 2.0
 // @license.url   http://www.apache.org/licenses/LICENSE-2.0.html
 
-// @host      localhost:8001
+// @host      localhost:8081
 // @BasePath  /api/v1
 
 // @securityDefinitions.apikey BearerAuth
@@ -85,16 +90,45 @@ func main() {
 		db = nil // Explicitly set to nil for clarity
 	}
 
+	// Run automigrations for authn models so required tables (users, organizations, sessions, etc.) exist.
+	if db != nil {
+		models := authn.GetModelsForMigration()
+		if err := db.AutoMigrate(models...); err != nil {
+			log.Error("Database automigrate failed", "err", err)
+		} else {
+			log.Info("Database automigrate completed successfully")
+		}
+		// Ensure default organization exists for individual users
+		if org, err := authn.EnsureDefaultOrganization(db); err != nil {
+			log.Error("Failed to ensure default organization", "err", err)
+		} else if org != nil {
+			log.Info("Default organization ensured", "id", org.ID, "name", org.Name)
+		}
+	}
+
+	// Configure the API base path in swagger documentation
+	swagger.ConfigureApiBasePath("/api/v1")
+
 	// Initialize router with database connection
 	routerInstance := router.InitRoutes(db)
 	if routerInstance == nil {
 		log.Error("Failed to initialize router")
 	}
 
-	// Start server
+	// Start server: either as a normal HTTP server (for Fargate / local) or as AWS Lambda
 	serverAddr := config.GetServerAddress()
 	log.Info("Server starting", "address", serverAddr)
 
+	// Detect Lambda environment by common env vars and start adapter if present
+	if os.Getenv("AWS_LAMBDA_FUNCTION_NAME") != "" || os.Getenv("LAMBDA_TASK_ROOT") != "" {
+		log.Info("Running in AWS Lambda mode - starting lambda adapter")
+		adapter := ginadapter.New(routerInstance)
+		// This will block and run the Lambda handler
+		lambda.Start(adapter.ProxyWithContext)
+		return
+	}
+
+	// Normal HTTP server (local / Fargate / Docker)
 	if err := routerInstance.Run(serverAddr); err != nil {
 		log.Error("Failed to start server", "err", err)
 	}

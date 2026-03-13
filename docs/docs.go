@@ -9,11 +9,10 @@ const docTemplate = `{
     "info": {
         "description": "{{escape .Description}}",
         "title": "{{.Title}}",
-        "termsOfService": "http://swagger.io/terms/",
         "contact": {
             "name": "API Support",
-            "url": "http://www.swagger.io/support",
-            "email": "support@swagger.io"
+            "url": "https://github.com/yourusername/shield/issues",
+            "email": "support@example.com"
         },
         "license": {
             "name": "Apache 2.0",
@@ -134,6 +133,15 @@ const docTemplate = `{
                     "Authentication"
                 ],
                 "summary": "Logout user",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "CSRF token",
+                        "name": "X-CSRF-Token",
+                        "in": "header",
+                        "required": true
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "User logged out successfully",
@@ -414,6 +422,13 @@ const docTemplate = `{
                         "schema": {
                             "$ref": "#/definitions/dto.RefreshTokenRequest"
                         }
+                    },
+                    {
+                        "type": "string",
+                        "description": "CSRF token",
+                        "name": "X-CSRF-Token",
+                        "in": "header",
+                        "required": true
                     }
                 ],
                 "responses": {
@@ -489,6 +504,47 @@ const docTemplate = `{
                     }
                 }
             }
+        },
+        "/internal/exchange": {
+            "post": {
+                "description": "Internal endpoint used by API Gateway to obtain a valid access token for a session",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Internal"
+                ],
+                "summary": "Exchange session id for access token",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ExchangeTokenResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorResponse"
+                        }
+                    }
+                }
+            }
         }
     },
     "definitions": {
@@ -526,6 +582,23 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "error": {
+                    "type": "string"
+                }
+            }
+        },
+        "dto.ExchangeTokenResponse": {
+            "type": "object",
+            "properties": {
+                "access_token": {
+                    "type": "string"
+                },
+                "expires_at": {
+                    "type": "string"
+                },
+                "expires_in": {
+                    "type": "integer"
+                },
+                "token_type": {
                     "type": "string"
                 }
             }
@@ -690,10 +763,14 @@ const docTemplate = `{
             "type": "object",
             "required": [
                 "email",
+                "name",
                 "password"
             ],
             "properties": {
                 "email": {
+                    "type": "string"
+                },
+                "name": {
                     "type": "string"
                 },
                 "password": {
@@ -744,6 +821,14 @@ const docTemplate = `{
                 }
             }
         }
+    },
+    "securityDefinitions": {
+        "BearerAuth": {
+            "description": "Type \"Bearer\" followed by a space and the JWT token.",
+            "type": "apiKey",
+            "name": "Authorization",
+            "in": "header"
+        }
     }
 }`
 
@@ -752,9 +837,9 @@ var SwaggerInfo = &swag.Spec{
 	Version:          "1.0",
 	Host:             "localhost:8081",
 	BasePath:         "/api/v1",
-	Schemes:          []string{"http"},
-	Title:            "Shield Platform API",
-	Description:      "This is the main API for the Shield Identity and Access Management Platform.",
+	Schemes:          []string{},
+	Title:            "",
+	Description:      "API documentation for Organic Forms Configuration Management\nThis API provides endpoints for:\n- User Authentication & Authorization\n- Organization Management\n- SSO Configuration\n- Form Configuration Management",
 	InfoInstanceName: "swagger",
 	SwaggerTemplate:  docTemplate,
 	LeftDelim:        "{{",

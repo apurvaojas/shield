@@ -3,11 +3,10 @@ package router
 import (
 	"shield/cmd/app/config"
 	"shield/modules/authn"
+	"shield/modules/common/swagger"
 	"shield/modules/common/telemetry/instrumentation"
 
 	"github.com/gin-gonic/gin"
-	swaggerFiles "github.com/swaggo/files"
-	ginSwagger "github.com/swaggo/gin-swagger"
 	"gorm.io/gorm"
 )
 
@@ -52,7 +51,6 @@ func InitRoutes(db *gorm.DB) *gin.Engine {
 	}
 
 	allowedHosts := cfg.Security.TrustedProxies
-	// InitSwagger()
 
 	router := gin.New()
 
@@ -62,8 +60,8 @@ func InitRoutes(db *gorm.DB) *gin.Engine {
 	router.Use(gin.Recovery())
 	// router.Use(middleware.CORSMiddleware())
 
-	// Swagger documentation endpoint
-	router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
+	// Register swagger documentation routes
+	swagger.RegisterSwaggerRoutes(router)
 
 	// Health check endpoint
 	router.GET("/health", func(c *gin.Context) {
